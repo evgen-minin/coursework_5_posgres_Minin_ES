@@ -1,0 +1,2 @@
+class HeadHunterAPI:
+    pass
