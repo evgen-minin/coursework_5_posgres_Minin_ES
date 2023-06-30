@@ -6,6 +6,7 @@ authors = ["Евгений Минин <evgenminin1988@mail.ru>"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+requests = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 
