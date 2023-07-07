@@ -1,7 +1,7 @@
 import logging
 import csv
+import os
 import requests
-
 
 class VacancySearch:
     def __init__(self, url: str = 'https://api.hh.ru/vacancies'):
@@ -50,30 +50,49 @@ class VacancySearch:
         :param filename: Имя файла для сохранения результатов.
         :return: None.
         """
-        fieldnames = ['Vacancy Name', 'Vacancy ID', 'Vacancy Location', 'Salary', 'URL',
-                      'Employer ID', 'Employer Name', 'Job Requirement', 'Responsibility', 'Experience']
+        fieldnames = ['vacancy name', 'vacancy id', 'vacancy location', 'salary', 'url',
+                      'employer id', 'employer name', 'job requirement', 'responsibility', 'experience']
 
-        with open(filename, 'w', newline='', encoding='utf-8') as file:
+        # Проверяем, существует ли файл
+        file_exists = os.path.isfile(filename)
+
+        with open(filename, 'a', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
+
+            # Если файл не существует, записываем заголовки
+            if not file_exists:
+                writer.writeheader()
+
+            existing_vacancy_ids = set()
+
+            try:
+                with open(filename, 'r', newline='', encoding='utf-8') as file:
+                    reader = csv.DictReader(file)
+                    for row in reader:
+                        existing_vacancy_ids.add(row['vacancy id'])
+            except FileNotFoundError:
+                pass
 
             for vacancy in vacancies:
-                salary_from = vacancy.get('salary', {}).get('from') if vacancy.get('salary') is not None else None
-                salary_to = vacancy.get('salary', {}).get('to') if vacancy.get('salary') is not None else None
-                salary = salary_from or salary_to
+                if vacancy['id'] not in existing_vacancy_ids:
+                    existing_vacancy_ids.add(vacancy['id'])
+                    salary = vacancy.get('salary')
+                    salary_from = salary.get('from') if isinstance(salary, dict) and 'from' in salary else None
+                    salary_to = salary.get('to') if isinstance(salary, dict) and 'to' in salary else None
+                    salary_value = salary_from or salary_to
 
-                row = {
-                    'Vacancy Name': vacancy.get('name'),
-                    'Vacancy ID': vacancy.get('id'),
-                    'Vacancy Location': vacancy.get('area', {}).get('name'),
-                    'Salary': salary,
-                    'URL': vacancy.get('alternate_url'),
-                    'Employer ID': vacancy.get('employer', {}).get('id'),
-                    'Employer Name': vacancy.get('employer', {}).get('name'),
-                    'Job Requirement': vacancy.get('snippet', {}).get('requirement'),
-                    'Responsibility': vacancy.get('snippet', {}).get('responsibility'),
-                    'Experience': vacancy.get('experience', {}).get('name')
-                }
-                writer.writerow(row)
+                    row = {
+                        'vacancy name': vacancy.get('name'),
+                        'vacancy id': vacancy.get('id'),
+                        'vacancy location': vacancy.get('area', {}).get('name'),
+                        'salary': salary_value,
+                        'url': vacancy.get('alternate_url'),
+                        'employer id': vacancy.get('employer', {}).get('id'),
+                        'employer name': vacancy.get('employer', {}).get('name'),
+                        'job requirement': vacancy.get('snippet', {}).get('requirement'),
+                        'responsibility': vacancy.get('snippet', {}).get('responsibility'),
+                        'experience': vacancy.get('experience', {}).get('name')
+                    }
+                    writer.writerow(row)
 
         self.logger.info(f"Данные с вакансиями сохранены в файл: {filename}")

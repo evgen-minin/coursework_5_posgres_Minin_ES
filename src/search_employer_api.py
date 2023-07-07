@@ -1,5 +1,6 @@
 import logging
 import csv
+import os
 from typing import List
 
 import requests
@@ -73,9 +74,15 @@ class EmployerSearch:
         """
         fieldnames = ['employer_id', 'name', 'website', 'count_open_vacancies']
 
-        with open(filename, 'w', newline='', encoding='utf-8') as file:
+        # Проверяем, существует ли файл
+        file_exists = os.path.isfile(filename)
+
+        with open(filename, 'a', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
+
+            # Если файл не существует, записываем заголовки
+            if not file_exists:
+                writer.writeheader()
 
             for employer in employers:
                 row = {
